@@ -1,0 +1,195 @@
+--> Question-1: List the names of all customers along with their country, state, and city?
+select concat(FirstName,LastName),Country,ifnull(State,'Not_Provided') as State,City from `decoded-cove-466608-j2.chinook_data_analysis.Customer`;
+
+--> Q2. Which countries have the most customers?
+select Country,count(CustomerId) as Customer_Count from `decoded-cove-466608-j2.chinook_data_analysis.Customer` group by Country order by Customer_Count desc;
+
+--> Q3. Who is the top customer by total spending?
+select CONCAT(c.FirstName,c.LastName) as Cutomer_Name,sum(i.Total) as Total_Spending from `decoded-cove-466608-j2.chinook_data_analysis.Customer` c
+join
+`decoded-cove-466608-j2.chinook_data_analysis.Invoice` i on c.CustomerId = i.CustomerId group by c.FirstName,c.LastName
+order by Total_Spending desc limit 1;
+
+--> Q4. Show the total number of tracks in each genre.
+select g.Name,count(t.TrackId) as Track_Count from `decoded-cove-466608-j2.chinook_data_analysis.Genre` g
+join 
+`decoded-cove-466608-j2.chinook_data_analysis.Track` t
+on g.GenreId = t.GenreId group by g.Name order by Track_Count desc;
+
+--> Q5. Find the top 5 selling tracks by revenue.
+select t.Name,sum(i.TrackId*i.Quantity) as Total_Revenue from `decoded-cove-466608-j2.chinook_data_analysis.Invoice_Line` i
+join
+`decoded-cove-466608-j2.chinook_data_analysis.Track` t
+on i.TrackId = t.TrackId
+group by t.Name 
+order by Total_Revenue desc limit 1;
+
+
+--> Q6. What is the total sales per country?
+select i.BillingCountry,round(sum(il.Quantity*il.UnitPrice),2) as `Total_Revenue_USD` from `decoded-cove-466608-j2.chinook_data_analysis.Invoice` i
+join 
+`decoded-cove-466608-j2.chinook_data_analysis.Invoice_Line` il
+on i.InvoiceId = il.InvoiceId group by i.BillingCountry order by `Total_Revenue_USD` desc;
+
+--> Q7. Show the employee (sales support agent) who made the highest sales.
+select concat(em.FirstName,em.LastName)as Employee_Name,round(sum(il.UnitPrice *il.Quantity),2) as Employee_Sales from `decoded-cove-466608-j2.chinook_data_analysis.Employee` em
+join `decoded-cove-466608-j2.chinook_data_analysis.Customer` cu on em.EmployeeId = cu.SupportRepId
+join `decoded-cove-466608-j2.chinook_data_analysis.Invoice` i on cu.CustomerId = i.CustomerId
+join `decoded-cove-466608-j2.chinook_data_analysis.Invoice_Line` il on 
+i.InvoiceId = il.InvoiceId where em.Title = "Sales Support Agent" group by Employee_Name order by Employee_Sales desc;
+
+--> Q8. What are the top 3 genres by total sales revenue?
+select g.Name,sum(il.Quantity*il.UnitPrice) as Total_Sales from `decoded-cove-466608-j2.chinook_data_analysis.Genre` g
+join `decoded-cove-466608-j2.chinook_data_analysis.Track` t on g.GenreId = t.GenreId
+join `decoded-cove-466608-j2.chinook_data_analysis.Invoice_Line` il on
+t.TrackId = il.TrackId group by g.Name order by Total_Sales desc limit 3;
+
+--> Q9. Find the average invoice total for each country.
+select c.Country,round(avg(Total),2) as Average from `decoded-cove-466608-j2.chinook_data_analysis.Customer` c
+join `decoded-cove-466608-j2.chinook_data_analysis.Invoice` i
+on c.CustomerId = i.CustomerId group by c.Country order by Average desc;
+
+--> Q10. List customers who have spent more than $50 in total.
+
+select concat(c.FirstName,c.LastName) as Customer_Name,round(sum(il.UnitPrice*il.Quantity),2) as Total_Spent from `decoded-cove-466608-j2.chinook_data_analysis.Customer` c
+join `decoded-cove-466608-j2.chinook_data_analysis.Invoice` i on
+c.CustomerId = i.CustomerId
+join `decoded-cove-466608-j2.chinook_data_analysis.Invoice_Line` il on
+i.InvoiceId = il.InvoiceId group by Customer_Name Having Total_Spent > 40 order by Customer_Name asc;
+
+--> Q11. Find the most popular media type based on the number of tracks.
+select m.Name,count(t.TrackId) as Number_of_Tracks from `decoded-cove-466608-j2.chinook_data_analysis.MediaType` m
+join
+`decoded-cove-466608-j2.chinook_data_analysis.Track` t on
+m.MediaTypeId = t.MediaTypeId group by m.Name order by Number_of_Tracks desc limit 1;
+
+-->  Q12. Which artist has the most albums in the database?
+select a.Name,count(al.AlbumId) as album_count from `decoded-cove-466608-j2.chinook_data_analysis.Artist` a
+join
+`decoded-cove-466608-j2.chinook_data_analysis.Album_Table` al
+on a.ArtistId = al.ArtistId group by a.Name order by album_count desc;
+
+--> Q13. Calculate the average track length (milliseconds) for each genre.
+select g.Name,avg(t.Milliseconds) as Avg_Track_Length from `decoded-cove-466608-j2.chinook_data_analysis.Genre` g
+join  `decoded-cove-466608-j2.chinook_data_analysis.Track` t
+on g.GenreId = t.GenreId group by g.Name order by Avg_Track_Length desc;
+
+--> Q14. Show monthly total sales for each year
+SELECT 
+  EXTRACT(year FROM InvoiceDate) AS Year,
+  EXTRACT(MONTH FROM InvoiceDate) AS Month,
+  ROUND(SUM(Total), 2) AS Monthly_Total_Sales
+FROM 
+  `decoded-cove-466608-j2.chinook_data_analysis.Invoice`
+GROUP BY 
+  Year, Month
+ORDER BY 
+  Year, Month;
+
+-->  Q15. Rank customers by spending within their country.
+select Country,Customer_Name,rank() over(order by Customer_Spending) as Spending_Rank from (
+  select c.Country as Country,concat(c.FirstName," ",c.LastName) as Customer_Name,sum(il.Quantity*il.UnitPrice) as Customer_Spending from `decoded-cove-466608-j2.chinook_data_analysis.Customer` c
+  join `decoded-cove-466608-j2.chinook_data_analysis.Invoice` i on c.CustomerId = i.CustomerId
+  join `decoded-cove-466608-j2.chinook_data_analysis.Invoice_Line` il on i.InvoiceId = il.InvoiceId group by Country,Customer_Name)
+order by Spending_Rank;
+
+-->I previously used aggregated function directly in rank window function,Then it directly gives rank() after group by
+--> It means Rank should be calulated after calculating the Spending(Sum) else it will give wrong
+
+--> Q16.Top 5 Artists by Total Track Sales Revenue
+select max(ar.Name) as Artist_Name,round(sum(il.UnitPrice*il.Quantity),1) as Total_Revenue,count(distinct il.InvoiceId) as Purchase_Count from `chinook_data_analysis.Artist` ar join
+`chinook_data_analysis.Album_Table` al on ar.ArtistId = al.ArtistId
+join `chinook_data_analysis.Track` t on al.AlbumId = t.AlbumId
+join `chinook_data_analysis.Invoice_Line` il on t.TrackId = il.TrackId
+group by ar.ArtistId order by Total_Revenue desc limit 5;
+
+--> here ar.name is technically not grouped,so it will through that error,ar.name is related to ar.artist_id,we use max(ar.name) or min(ar.username) to get it
+
+--> Q17.Monthly Sales Trend
+select 
+case when extract(month from i.InvoiceDate) = 01 then 'January'
+when extract(month from i.InvoiceDate) = 02 then 'February'
+when extract(month from i.InvoiceDate) = 03 then 'March'
+when extract(month from i.InvoiceDate) = 04 then 'April'
+when extract(month from i.InvoiceDate) = 05 then 'May'
+when extract(month from i.InvoiceDate) = 06 then 'June'
+when extract(month from i.InvoiceDate) = 07 then 'July'
+when extract(month from i.InvoiceDate) = 08 then 'August'
+when extract(month from i.InvoiceDate) = 09 then 'September'
+when extract(month from i.InvoiceDate) = 10 then 'October'
+when extract(month from i.InvoiceDate) = 11 then 'November'
+when extract(month from i.InvoiceDate) = 12 then 'Deccember'
+ end as Month,round(sum(il.UnitPrice*il.Quantity),2) as Month_Sales
+ from `chinook_data_analysis.Invoice` i join
+`chinook_data_analysis.Invoice_Line` il on i.InvoiceId = il.InvoiceId
+join `chinook_data_analysis.Track` t on il.TrackId = t.TrackId group by Month;
+--> optimized query for above query
+select Month,Month_Sales from (
+select extract(month from i.InvoiceDate) as Month_Number,
+format_date("%B",i.InvoiceDate)
+ as Month,round(sum(il.UnitPrice*il.Quantity),2) as Month_Sales
+ from `chinook_data_analysis.Invoice` i join
+`chinook_data_analysis.Invoice_Line` il on i.InvoiceId = il.InvoiceId
+join `chinook_data_analysis.Track` t on il.TrackId = t.TrackId group by Month,Month_Number order by Month_Number
+)order by Month_Number;
+
+--> Q18.Top Genre per Country (by sales)
+select Country,Genre_Name,Sales from
+(
+select i.BillingCountry as Country,max(g.Name) as Genre_Name,
+round(sum(il.Quantity*il.UnitPrice),2) as Sales,
+row_number() over(partition by i.BillingCountry order by sum(il.Quantity*il.UnitPrice) desc) as rn 
+ from `chinook_data_analysis.Invoice` i join
+`chinook_data_analysis.Invoice_Line` il on i.InvoiceId =
+il.InvoiceId
+join `chinook_data_analysis.Track` t on il.TrackId = t.TrackId
+join `chinook_data_analysis.Genre` g on t.GenreId = g.GenreId
+group by Country,g.GenreId order by Country
+)
+where rn = 1;
+
+
+--> Q19.Number of Unique Albums per Artist
+select max(a.Name) as Artist_Name,count(distinct al.AlbumId) as No_Of_Albums from `chinook_data_analysis.Artist` a join
+`chinook_data_analysis.Album_Table` al on 
+a.ArtistId = al.ArtistId group by a.ArtistId order by No_Of_Albums desc;
+
+
+--> Q20.Customer Lifetime Value
+select concat(c.FirstName,' ',c.LastName) as Customer_Name,round(sum(il.UnitPrice*il.Quantity),2) as Total_Revenue,round(sum(il.UnitPrice*il.Quantity)/count(distinct i.InvoiceId),2) as Average_Revenue from `chinook_data_analysis.Customer` c join
+`chinook_data_analysis.Invoice` i on c.CustomerId = i.CustomerId
+join `chinook_data_analysis.Invoice_Line` il on i.InvoiceId = il.InvoiceId
+group by Customer_Name order by Total_Revenue desc;
+
+--> Q21.Invoices Containing More Than 5 Tracks
+select i.InvoiceId,Count(Distinct t.TrackId) as Track_Count from `chinook_data_analysis.Invoice` i join
+`chinook_data_analysis.Invoice_Line` il on i.InvoiceId = il.InvoiceId
+join `chinook_data_analysis.Track` t on il.TrackId = t.TrackId 
+group by i.InvoiceId having count(distinct t.TrackId) >5 order by Track_Count desc;
+
+--> Q22.Top 3 Most Popular Tracks in Each Genre
+select Genre_Name,Track_Name from(
+select g.Name as Genre_Name,t.Name as Track_Name,row_number() over(partition by g.Name order by count(il.InvoiceLineId) desc) as rn from `chinook_data_analysis.Genre` g join
+`chinook_data_analysis.Track` t on g.GenreId = t.GenreId
+join `chinook_data_analysis.Invoice_Line` il on t.TrackId = il.TrackId
+group by g.Name,t.Name)
+where rn in (1,2,3);
+
+--> Q23.Employees and Total Revenue Generated by Their Customers
+select concat(e.LastName,' ',e.FirstName) as Employee_Name,round(sum(il.Quantity *il.UnitPrice),2) as Total_Revenue from `chinook_data_analysis.Employee` e join
+`chinook_data_analysis.Customer` c on e.EmployeeId = c.SupportRepId
+join `chinook_data_analysis.Invoice` i on c.CustomerId= i.CustomerId join `chinook_data_analysis.Invoice_Line` 
+il on i.InvoiceId = il.InvoiceId group by Employee_Name;
+
+--> Q24.Genres That Have Never Been Purchased
+select distinct g.Name as Genre_Name from `chinook_data_analysis.Genre` g left join
+`chinook_data_analysis.Track` t on g.GenreId = t.GenreId left
+join `chinook_data_analysis.Invoice_Line` il on t.TrackId = il.TrackId
+where il.TrackId is null;
+
+
+--> Q25.Average Track Duration by Genre (only genres with more than 10 tracks)
+select distinct g.Name as Genre_Name,
+round(avg(t.Milliseconds)) as Avg_Duration from `chinook_data_analysis.Genre` g join
+`chinook_data_analysis.Track` t on g.GenreId = t.GenreId 
+group by Genre_Name having count(t.TrackId) > 10;
